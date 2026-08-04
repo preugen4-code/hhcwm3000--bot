@@ -5,7 +5,7 @@ const { getOrCreateInvite } = require("../utils/inviteManager");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("invites")
-        .setDescription("Zeigt deinen Invite-Link und deine Invites."),
+        .setDescription("Shows your invite link and invite count."),
 
     async execute(interaction) {
 
@@ -28,9 +28,9 @@ module.exports = {
 
         await interaction.reply({
             embeds: [{
-                title: "🎉 Deine Invites",
+                title: "🎉 Your Invites",
                 description:
-`**Invite Link**
+`**Your Invite Link**
 https://discord.gg/${user.inviteCode}
 
 **Invites**
