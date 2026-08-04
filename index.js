@@ -19,20 +19,52 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// =======================
 // Commands laden
-const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+// =======================
 
-for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
-    client.commands.set(command.data.name, command);
+const commandsPath = path.join(__dirname, "commands");
+
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs
+        .readdirSync(commandsPath)
+        .filter(file => file.endsWith(".js"));
+
+    for (const file of commandFiles) {
+        const command = require(path.join(commandsPath, file));
+
+        if (command.data && command.execute) {
+            client.commands.set(command.data.name, command);
+        }
+    }
 }
 
-client.once(Events.ClientReady, () => {
-    console.log(`✅ ${client.user.tag} ist online!`);
+// =======================
+// Ready Event
+// =======================
+
+const ready = require("./events/ready");
+
+client.once(Events.ClientReady, async () => {
+    await ready(client);
 });
 
-client.on(Events.InteractionCreate, async interaction => {
+// =======================
+// Guild Join Event
+// =======================
+
+const guildMemberAdd = require("./events/guildMemberAdd");
+
+client.on(Events.GuildMemberAdd, async (member) => {
+    await guildMemberAdd(member);
+});
+
+// =======================
+// Slash Commands
+// =======================
+
+client.on(Events.InteractionCreate, async (interaction) => {
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
@@ -40,22 +72,35 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!command) return;
 
     try {
+
         await command.execute(interaction);
+
     } catch (error) {
+
         console.error(error);
 
         if (interaction.replied || interaction.deferred) {
+
             await interaction.followUp({
-                content: "❌ Fehler beim Ausführen.",
+                content: "❌ Beim Ausführen des Commands ist ein Fehler aufgetreten.",
                 ephemeral: true
             });
+
         } else {
+
             await interaction.reply({
-                content: "❌ Fehler beim Ausführen.",
+                content: "❌ Beim Ausführen des Commands ist ein Fehler aufgetreten.",
                 ephemeral: true
             });
+
         }
+
     }
+
 });
+
+// =======================
+// Login
+// =======================
 
 client.login(process.env.DISCORD_TOKEN);
