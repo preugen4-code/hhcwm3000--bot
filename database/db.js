@@ -10,4 +10,12 @@ CREATE TABLE IF NOT EXISTS users (
 )
 `).run();
 
+db.prepare(`
+CREATE TABLE IF NOT EXISTS invites (
+    code TEXT PRIMARY KEY,
+    ownerId TEXT,
+    uses INTEGER DEFAULT 0
+)
+`).run();
+
 module.exports = db;
