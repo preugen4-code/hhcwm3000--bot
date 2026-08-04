@@ -2,6 +2,10 @@ const Database = require("better-sqlite3");
 
 const db = new Database("database/database.sqlite");
 
+// ==========================
+// Users
+// ==========================
+
 db.prepare(`
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -10,11 +14,43 @@ CREATE TABLE IF NOT EXISTS users (
 )
 `).run();
 
+// ==========================
+// Invite Codes
+// ==========================
+
 db.prepare(`
 CREATE TABLE IF NOT EXISTS invites (
     code TEXT PRIMARY KEY,
     ownerId TEXT,
     uses INTEGER DEFAULT 0
+)
+`).run();
+
+// ==========================
+// Giveaways
+// ==========================
+
+db.prepare(`
+CREATE TABLE IF NOT EXISTS giveaways (
+    messageId TEXT PRIMARY KEY,
+    channelId TEXT NOT NULL,
+    guildId TEXT NOT NULL,
+    prize TEXT NOT NULL,
+    winners INTEGER NOT NULL,
+    endTime INTEGER NOT NULL,
+    ended INTEGER DEFAULT 0
+)
+`).run();
+
+// ==========================
+// Giveaway Entries
+// ==========================
+
+db.prepare(`
+CREATE TABLE IF NOT EXISTS giveaway_entries (
+    messageId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    PRIMARY KEY (messageId, userId)
 )
 `).run();
 
