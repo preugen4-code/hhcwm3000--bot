@@ -1,6 +1,10 @@
 const Database = require("better-sqlite3");
+const path = require("path");
 
-const db = new Database("database/database.sqlite");
+// Use the project database even if the bot is started from another folder.
+const db = new Database(
+    process.env.DATABASE_PATH || path.join(__dirname, "database.sqlite")
+);
 
 // ==========================
 // Users

@@ -6,6 +6,10 @@ async function getOrCreateInvite(member) {
     ).get(member.id);
 
     if (existing && existing.inviteCode) {
+        // Reclaim the correct logical owner after a restart or a migration.
+        db.prepare(`
+            UPDATE invites SET ownerId = ? WHERE code = ?
+        `).run(member.id, existing.inviteCode);
         return existing.inviteCode;
     }
 
@@ -35,6 +39,15 @@ async function getOrCreateInvite(member) {
             "INSERT INTO users (id, inviteCode, invites) VALUES (?, ?, 0)"
         ).run(member.id, invite.code);
     }
+
+    // Register the link immediately so its first use is counted as well.
+    db.prepare(`
+        INSERT INTO invites (code, ownerId, uses)
+        VALUES (?, ?, ?)
+        ON CONFLICT(code) DO UPDATE SET
+            ownerId = excluded.ownerId,
+            uses = excluded.uses
+    `).run(invite.code, member.id, invite.uses ?? 0);
 
     return invite.code;
 }

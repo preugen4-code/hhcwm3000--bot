@@ -1,5 +1,6 @@
 const db = require("../database/db");
 const { getOrCreateInvite } = require("../utils/inviteManager");
+const config = require("../config");
 
 module.exports = async (interaction) => {
 
@@ -66,7 +67,7 @@ Good luck! 🍀`
 
     const invites = user ? user.invites : 0;
 
-    if (invites < 5) {
+    if (invites < config.inviteRequirement) {
 
         const inviteCode = await getOrCreateInvite(interaction.member);
 
@@ -76,10 +77,10 @@ Good luck! 🍀`
                 color: 0xff0000,
                 title: "❌ Requirements Not Met",
                 description:
-`You need at least **5 invites** to enter this giveaway.
+`You need at least **${config.inviteRequirement} invites** to enter this giveaway.
 
 **Current Invites**
-${invites}/5
+${invites}/${config.inviteRequirement}
 
 🔗 **Your Invite Link**
 https://discord.gg/${inviteCode}
