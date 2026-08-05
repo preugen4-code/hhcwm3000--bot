@@ -1,6 +1,7 @@
 const db = require("../database/db");
 const { getOrCreateInvite } = require("../utils/inviteManager");
 const config = require("../config");
+const { giveawayEmbed } = require("../utils/giveawayUtils");
 
 module.exports = async (interaction) => {
 
@@ -67,7 +68,7 @@ Good luck! 🍀`
 
     const invites = user ? user.invites : 0;
 
-    if (invites < config.inviteRequirement) {
+    if (!giveaway.testMode && invites < config.inviteRequirement) {
 
         const inviteCode = await getOrCreateInvite(interaction.member);
 
@@ -85,7 +86,7 @@ ${invites}/${config.inviteRequirement}
 🔗 **Your Invite Link**
 https://discord.gg/${inviteCode}
 
-Invite your friends using your personal invite link and come back once you've reached 5 invites.`
+Invite your friends using your personal invite link and come back once you've reached ${config.inviteRequirement} invites.`
             }]
         });
 
@@ -98,13 +99,21 @@ Invite your friends using your personal invite link and come back once you've re
         interaction.user.id
     );
 
+    const { entryCount } = db.prepare(
+        "SELECT COUNT(*) AS entryCount FROM giveaway_entries WHERE messageId = ?"
+    ).get(interaction.message.id);
+
+    await interaction.message.edit({
+        embeds: [giveawayEmbed(giveaway, entryCount)]
+    });
+
     return interaction.reply({
         ephemeral: true,
         embeds: [{
             color: 0x57F287,
             title: "✅ Successfully Entered!",
             description:
-`You have met all requirements.
+`${giveaway.testMode ? "You entered the test giveaway." : "You have met all requirements."}
 
 🏆 **Prize**
 ${giveaway.prize}

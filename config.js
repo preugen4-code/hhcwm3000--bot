@@ -6,5 +6,7 @@ module.exports = {
 
     giveawayColor: "#8b5cf6",
 
+    giveawayReminderMs: 10 * 60 * 1000,
+
     inviteChannelName: "inv-tracker"
 };

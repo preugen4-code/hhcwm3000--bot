@@ -42,9 +42,23 @@ CREATE TABLE IF NOT EXISTS giveaways (
     prize TEXT NOT NULL,
     winners INTEGER NOT NULL,
     endTime INTEGER NOT NULL,
-    ended INTEGER DEFAULT 0
+    ended INTEGER DEFAULT 0,
+    testMode INTEGER DEFAULT 0,
+    reminderSent INTEGER DEFAULT 0
 )
 `).run();
+
+// Safe migrations for databases created by earlier versions.
+for (const column of [
+    "testMode INTEGER DEFAULT 0",
+    "reminderSent INTEGER DEFAULT 0"
+]) {
+    try {
+        db.prepare(`ALTER TABLE giveaways ADD COLUMN ${column}`).run();
+    } catch (error) {
+        if (!String(error.message).includes("duplicate column")) throw error;
+    }
+}
 
 // ==========================
 // Giveaway Entries

@@ -4,147 +4,83 @@ const {
     ButtonStyle,
     EmbedBuilder
 } = require("discord.js");
-
 const db = require("../database/db");
+const config = require("../config");
+const { giveawayEmbed } = require("./giveawayUtils");
 
-module.exports = async function(client) {
+function endedRow() {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId("ended")
+            .setLabel("Giveaway Ended")
+            .setDisabled(true)
+            .setStyle(ButtonStyle.Secondary)
+    );
+}
 
+module.exports = function giveawayManager(client) {
     setInterval(async () => {
-
         const giveaways = db.prepare(
             "SELECT * FROM giveaways WHERE ended = 0"
         ).all();
 
         for (const giveaway of giveaways) {
-
-            if (Date.now() < giveaway.endTime)
-                continue;
-
-            db.prepare(
-                "UPDATE giveaways SET ended = 1 WHERE messageId = ?"
-            ).run(giveaway.messageId);
-
             try {
-
                 const channel = await client.channels.fetch(giveaway.channelId);
+                const entries = db.prepare(
+                    "SELECT userId FROM giveaway_entries WHERE messageId = ?"
+                ).all(giveaway.messageId);
+                const remaining = giveaway.endTime - Date.now();
+
+                if (remaining > 0) {
+                    if (!giveaway.reminderSent && remaining <= config.giveawayReminderMs) {
+                        db.prepare(
+                            "UPDATE giveaways SET reminderSent = 1 WHERE messageId = ?"
+                        ).run(giveaway.messageId);
+
+                        await channel.send({
+                            content: `@everyone Giveaway almost over! **${giveaway.prize}** ends <t:${Math.floor(giveaway.endTime / 1000)}:R>.`,
+                            allowedMentions: { parse: ["everyone"] }
+                        });
+                    }
+                    continue;
+                }
+
+                db.prepare(
+                    "UPDATE giveaways SET ended = 1 WHERE messageId = ?"
+                ).run(giveaway.messageId);
 
                 const message = await channel.messages.fetch(giveaway.messageId);
-
-                const entries = db.prepare(
-                    "SELECT * FROM giveaway_entries WHERE messageId = ?"
-                ).all(giveaway.messageId);
-
-                const disabledRow = new ActionRowBuilder()
-
-                    .addComponents(
-
-                        new ButtonBuilder()
-
-                            .setCustomId("ended")
-
-                            .setLabel("🎉 Giveaway Ended")
-
-                            .setDisabled(true)
-
-                            .setStyle(ButtonStyle.Secondary)
-
-                    );
-
-                const endedEmbed = new EmbedBuilder()
-
-                    .setColor("#8b5cf6")
-
-                    .setTitle("🎉 GIVEAWAY ENDED")
-
-                    .setDescription(
-
-`🏆 **Prize**
-${giveaway.prize}
-
-👥 **Winners**
-${giveaway.winners}
-
-⏰ **Ended**
-
-📋 **Requirements**
-✅ Minimum **5 Invites**`
-
-                    );
-
                 await message.edit({
-
-                    embeds: [endedEmbed],
-
-                    components: [disabledRow]
-
+                    embeds: [giveawayEmbed(giveaway, entries.length, true)],
+                    components: [endedRow()]
                 });
 
                 if (entries.length === 0) {
-
                     await channel.send({
-
-                        embeds: [
-
-                            new EmbedBuilder()
-
-                                .setColor("Red")
-
-                                .setTitle("❌ Giveaway Ended")
-
-                                .setDescription(
-                                    "No valid participants entered this giveaway."
-                                )
-
-                        ]
-
+                        content: "@everyone Giveaway ended — no one entered.",
+                        allowedMentions: { parse: ["everyone"] }
                     });
-
                     continue;
-
                 }
 
-                const shuffled = entries.sort(() => Math.random() - 0.5);
-
-                const winners = shuffled.slice(0, giveaway.winners);
-
-                const mentions = winners.map(
-                    w => `<@${w.userId}>`
-                ).join("\n");
+                const winnerIds = [...entries]
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, giveaway.winners)
+                    .map(entry => entry.userId);
+                const mentions = winnerIds.map(id => `<@${id}>`).join(", ");
 
                 await channel.send({
-
-                    embeds: [
-
-                        new EmbedBuilder()
-
-                            .setColor("#57F287")
-
-                            .setTitle("🏆 Giveaway Ended")
-
-                            .setDescription(
-
-`The **${giveaway.prize}** giveaway has ended!
-
-👑 **Winner(s)**
-
-${mentions}
-
-Congratulations! 🎉`
-
-                            )
-
-                    ]
-
+                    content: `@everyone Giveaway ended! Congratulations ${mentions} — you won **${giveaway.prize}**!`,
+                    allowedMentions: { parse: ["everyone", "users"] },
+                    embeds: [new EmbedBuilder()
+                        .setColor(0x57F287)
+                        .setTitle("Giveaway Winners")
+                        .setDescription(`**Prize:** ${giveaway.prize}\n**Winner(s):** ${mentions}`)]
                 });
-
-            } catch (err) {
-
-                console.log(err);
-
+            } catch (error) {
+                console.error(`Failed to process giveaway ${giveaway.messageId}.`, error);
             }
-
         }
-
     }, 1000);
-
 };
