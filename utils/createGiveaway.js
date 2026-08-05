@@ -32,6 +32,8 @@ async function createGiveaway(interaction, testMode) {
             .setStyle(ButtonStyle.Secondary)
     );
     const message = await interaction.channel.send({
+        content: testMode ? undefined : "@everyone A new giveaway has started!",
+        allowedMentions: testMode ? undefined : { parse: ["everyone"] },
         embeds: [giveawayEmbed(giveaway, 0)],
         components: [row]
     });
