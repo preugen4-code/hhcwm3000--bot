@@ -13,6 +13,7 @@ module.exports = async (member) => {
 
             if (saved && (invite.uses ?? 0) > saved.uses) {
                 usedInvite = {
+                    code: invite.code,
                     ownerId: saved.ownerId,
                     addedUses: (invite.uses ?? 0) - saved.uses
                 };
@@ -38,6 +39,18 @@ module.exports = async (member) => {
 
         if (!usedInvite?.ownerId) {
             console.warn(`Could not determine the invite used by ${member.user.tag}.`);
+            return;
+        }
+
+        const insertJoin = db.prepare(`
+            INSERT OR IGNORE INTO invite_join_members (inviteCode, memberId)
+            VALUES (?, ?)
+        `).run(usedInvite.code, member.id);
+
+        if (insertJoin.changes === 0) {
+            console.log(
+                `${member.user.tag} rejoined using ${usedInvite.code}; invite not counted twice.`
+            );
             return;
         }
 

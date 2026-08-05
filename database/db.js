@@ -80,4 +80,14 @@ CREATE TABLE IF NOT EXISTS giveaway_entries (
 )
 `).run();
 
+// A Discord account may only count once for each invite link. This prevents
+// leave-and-rejoin farming from inflating a member's invite total.
+db.prepare(`
+CREATE TABLE IF NOT EXISTS invite_join_members (
+    inviteCode TEXT NOT NULL,
+    memberId TEXT NOT NULL,
+    PRIMARY KEY (inviteCode, memberId)
+)
+`).run();
+
 module.exports = db;
