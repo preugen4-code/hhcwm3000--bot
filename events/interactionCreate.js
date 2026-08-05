@@ -13,7 +13,16 @@ module.exports = async (interaction) => {
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            const inviteCode = await getOrCreateInvite(interaction.member);
+            const timeout = new Promise((_, reject) => {
+                setTimeout(
+                    () => reject(new Error("Invite creation timed out.")),
+                    8_000
+                );
+            });
+            const inviteCode = await Promise.race([
+                getOrCreateInvite(interaction.member),
+                timeout
+            ]);
 
             return interaction.editReply({
                 embeds: [{
@@ -25,7 +34,7 @@ module.exports = async (interaction) => {
         } catch (error) {
             console.error("Unable to create an invite link.", error);
             return interaction.editReply(
-                "I could not create an invite link. Give the bot the Create Invite permission in a text channel."
+                "I could not create an invite link. Give the bot the Create Invite permission in a text channel, then try again."
             );
         }
     }
