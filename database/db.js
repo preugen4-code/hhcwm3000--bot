@@ -1,10 +1,18 @@
 const Database = require("better-sqlite3");
 const path = require("path");
+const fs = require("fs");
 
 // Use the project database even if the bot is started from another folder.
-const db = new Database(
-    process.env.DATABASE_PATH || path.join(__dirname, "database.sqlite")
+const databasePath = process.env.DATABASE_PATH || path.join(
+    __dirname,
+    "database.sqlite"
 );
+
+// Railway volumes are mounted as directories and may not exist until the
+// first deploy. Create the parent directory before SQLite opens the file.
+fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+
+const db = new Database(databasePath);
 
 // ==========================
 // Users
