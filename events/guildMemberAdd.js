@@ -30,7 +30,12 @@ module.exports = async (member) => {
                 "UPDATE users SET invites = invites + 1 WHERE id = ?"
             ).run(saved.ownerId);
 
-            console.log(`${saved.ownerId} hat einen neuen Invite!`);
+            console.log({
+    code: invite.code,
+    oldUses: saved.uses,
+    newUses: invite.uses,
+    ownerId: saved.ownerId
+});
         }
     }
 };
