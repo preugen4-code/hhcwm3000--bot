@@ -25,7 +25,11 @@ async function createGiveaway(interaction, testMode) {
         new ButtonBuilder()
             .setCustomId("enter_giveaway")
             .setLabel(testMode ? "Enter Test Giveaway" : "Enter Giveaway")
-            .setStyle(ButtonStyle.Primary)
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId("get_invite_link")
+            .setLabel("Get Invite Link")
+            .setStyle(ButtonStyle.Secondary)
     );
     const message = await interaction.channel.send({
         embeds: [giveawayEmbed(giveaway, 0)],

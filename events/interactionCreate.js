@@ -7,6 +7,19 @@ module.exports = async (interaction) => {
 
     if (!interaction.isButton()) return;
 
+    if (interaction.customId === "get_invite_link") {
+        const inviteCode = await getOrCreateInvite(interaction.member);
+
+        return interaction.reply({
+            ephemeral: true,
+            embeds: [{
+                color: config.giveawayColor,
+                title: "Your Invite Link",
+                description: `Share this personal link:\nhttps://discord.gg/${inviteCode}`
+            }]
+        });
+    }
+
     if (interaction.customId !== "enter_giveaway") return;
 
     const giveaway = db.prepare(
