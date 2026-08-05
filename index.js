@@ -16,6 +16,7 @@ const ready = require("./events/ready");
 const guildMemberAdd = require("./events/guildMemberAdd");
 const buttonInteraction = require("./events/interactionCreate");
 const giveawayManager = require("./utils/giveawayManager");
+const { startWalletVerificationServer } = require("./utils/walletVerification");
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
@@ -76,3 +77,4 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+startWalletVerificationServer(client);

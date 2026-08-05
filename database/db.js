@@ -101,4 +101,21 @@ CREATE TABLE IF NOT EXISTS invite_challenges (
 )
 `).run();
 
+db.prepare(`
+CREATE TABLE IF NOT EXISTS wallet_verification_sessions (
+    token TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    nonce TEXT NOT NULL,
+    expiresAt INTEGER NOT NULL
+)
+`).run();
+
+db.prepare(`
+CREATE TABLE IF NOT EXISTS verified_wallets (
+    userId TEXT PRIMARY KEY,
+    walletAddress TEXT NOT NULL UNIQUE,
+    verifiedAt INTEGER NOT NULL
+)
+`).run();
+
 module.exports = db;
