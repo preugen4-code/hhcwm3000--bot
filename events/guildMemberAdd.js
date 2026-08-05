@@ -1,5 +1,6 @@
 const db = require("../database/db");
 const config = require("../config");
+const { recordInviteProgress } = require("../utils/inviteChallenge");
 
 module.exports = async (member) => {
     try {
@@ -64,6 +65,8 @@ module.exports = async (member) => {
         const { invites: totalInvites } = db.prepare(
             "SELECT invites FROM users WHERE id = ?"
         ).get(usedInvite.ownerId);
+
+        await recordInviteProgress(member.client, usedInvite.ownerId, totalInvites);
 
         try {
             await inviter.send(

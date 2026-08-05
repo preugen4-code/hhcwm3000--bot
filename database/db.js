@@ -90,4 +90,15 @@ CREATE TABLE IF NOT EXISTS invite_join_members (
 )
 `).run();
 
+db.prepare(`
+CREATE TABLE IF NOT EXISTS invite_challenges (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    channelId TEXT NOT NULL,
+    messageId TEXT NOT NULL,
+    target INTEGER NOT NULL,
+    reward TEXT NOT NULL,
+    winnerId TEXT
+)
+`).run();
+
 module.exports = db;
