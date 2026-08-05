@@ -8,16 +8,26 @@ module.exports = async (interaction) => {
     if (!interaction.isButton()) return;
 
     if (interaction.customId === "get_invite_link") {
-        const inviteCode = await getOrCreateInvite(interaction.member);
+        // Creating an invite can exceed Discord's three-second interaction
+        // deadline, so acknowledge the button press immediately.
+        await interaction.deferReply({ ephemeral: true });
 
-        return interaction.reply({
-            ephemeral: true,
-            embeds: [{
-                color: config.giveawayColor,
-                title: "Your Invite Link",
-                description: `Share this personal link:\nhttps://discord.gg/${inviteCode}`
-            }]
-        });
+        try {
+            const inviteCode = await getOrCreateInvite(interaction.member);
+
+            return interaction.editReply({
+                embeds: [{
+                    color: config.giveawayColor,
+                    title: "Your Invite Link",
+                    description: `Share this personal link:\nhttps://discord.gg/${inviteCode}`
+                }]
+            });
+        } catch (error) {
+            console.error("Unable to create an invite link.", error);
+            return interaction.editReply(
+                "I could not create an invite link. Give the bot the Create Invite permission in a text channel."
+            );
+        }
     }
 
     if (interaction.customId !== "enter_giveaway") return;
