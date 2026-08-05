@@ -7,11 +7,15 @@ const {
     Client,
     Collection,
     GatewayIntentBits,
-    Events
+    Events,
+    REST,
+    Routes
 } = require("discord.js");
 
 const ready = require("./events/ready");
 const guildMemberAdd = require("./events/guildMemberAdd");
+const buttonInteraction = require("./events/interactionCreate");
+const giveawayManager = require("./utils/giveawayManager");
 
 const client = new Client({
     intents: [
@@ -23,16 +27,15 @@ const client = new Client({
 client.commands = new Collection();
 
 // ==========================
-// Commands laden
+// Load Commands
 // ==========================
 
+const commands = [];
 const commandsPath = path.join(__dirname, "commands");
 
 if (fs.existsSync(commandsPath)) {
 
-    const commandFiles = fs
-        .readdirSync(commandsPath)
-        .filter(file => file.endsWith(".js"));
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
     for (const file of commandFiles) {
 
@@ -40,6 +43,7 @@ if (fs.existsSync(commandsPath)) {
 
         if (command.data && command.execute) {
             client.commands.set(command.data.name, command);
+            commands.push(command.data.toJSON());
         }
 
     }
@@ -47,67 +51,57 @@ if (fs.existsSync(commandsPath)) {
 }
 
 // ==========================
-// Bot Ready
+// Ready
 // ==========================
 
 client.once(Events.ClientReady, async () => {
+
     await ready(client);
+
+    const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
+
+    try {
+
+        await rest.put(
+            Routes.applicationGuildCommands(
+                "1534310295378329751",
+                "1457819772455751863"
+            ),
+            {
+                body: commands
+            }
+        );
+
+        console.log("✅ Slash Commands Registered");
+
+    } catch (err) {
+
+        console.log(err);
+
+    }
+
+    giveawayManager(client);
+
 });
 
 // ==========================
-// Neue Mitglieder
+// Member Join
 // ==========================
 
 client.on(Events.GuildMemberAdd, async (member) => {
+
     await guildMemberAdd(member);
+
 });
 
 // ==========================
-// Slash Commands + Buttons
+// Buttons
 // ==========================
 
 client.on(Events.InteractionCreate, async (interaction) => {
 
     if (interaction.isButton()) {
-
-        if (interaction.customId === "enter_giveaway") {
-
-            const db = require("./database/db");
-
-            const user = db.prepare(
-                "SELECT * FROM users WHERE id = ?"
-            ).get(interaction.user.id);
-
-            const invites = user ? user.invites : 0;
-
-            if (invites < 5) {
-
-                return interaction.reply({
-                    ephemeral: true,
-                    embeds: [{
-                        color: 0xff0000,
-                        title: "❌ Requirements Not Met",
-                        description:
-`You need **5 invites**.
-
-Current invites: **${invites}/5**`
-                    }]
-                });
-
-            }
-
-            return interaction.reply({
-                ephemeral: true,
-                embeds: [{
-                    color: 0x57F287,
-                    title: "✅ Success",
-                    description: "You successfully entered the giveaway!"
-                }]
-            });
-
-        }
-
-        return;
+        return buttonInteraction(interaction);
     }
 
     if (!interaction.isChatInputCommand()) return;
@@ -120,21 +114,21 @@ Current invites: **${invites}/5**`
 
         await command.execute(interaction);
 
-    } catch (error) {
+    } catch (err) {
 
-        console.error(error);
+        console.log(err);
 
         if (interaction.replied || interaction.deferred) {
 
             await interaction.followUp({
-                content: "❌ Beim Ausführen des Commands ist ein Fehler aufgetreten.",
+                content: "An error occurred while executing this command.",
                 ephemeral: true
             });
 
         } else {
 
             await interaction.reply({
-                content: "❌ Beim Ausführen des Commands ist ein Fehler aufgetreten.",
+                content: "An error occurred while executing this command.",
                 ephemeral: true
             });
 
@@ -143,9 +137,5 @@ Current invites: **${invites}/5**`
     }
 
 });
-
-// ==========================
-// Login
-// ==========================
 
 client.login(process.env.DISCORD_TOKEN);
