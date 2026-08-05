@@ -43,6 +43,12 @@ module.exports = {
         const hours = interaction.options.getInteger("hours");
         const winners = interaction.options.getInteger("winners");
 
+        console.log({
+    prize,
+    hours,
+    winners
+});
+
         const endTime = Date.now() + (hours * 60 * 60 * 1000);
 
         const embed = new EmbedBuilder()
