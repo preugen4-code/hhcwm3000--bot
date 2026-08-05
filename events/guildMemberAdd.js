@@ -1,6 +1,9 @@
 const db = require("../database/db");
 
 module.exports = async (member) => {
+
+    console.log(`${member.user.tag} joined`);
+
     const invites = await member.guild.invites.fetch();
 
     for (const invite of invites.values()) {
@@ -9,18 +12,21 @@ module.exports = async (member) => {
             "SELECT * FROM invites WHERE code = ?"
         ).get(invite.code);
 
-        if (!saved) {
-            db.prepare(
-                "INSERT INTO invites (code, ownerId, uses) VALUES (?, ?, ?)"
-            ).run(
-                invite.code,
-                invite.inviter?.id ?? null,
-                invite.uses
-            );
-            continue;
-        }
+        console.log(
+            invite.code,
+            "old:",
+            saved?.uses,
+            "new:",
+            invite.uses,
+            "owner:",
+            saved?.ownerId
+        );
+
+        if (!saved) continue;
 
         if (invite.uses > saved.uses) {
+
+            console.log("USED:", invite.code);
 
             db.prepare(
                 "UPDATE invites SET uses = ? WHERE code = ?"
@@ -30,12 +36,10 @@ module.exports = async (member) => {
                 "UPDATE users SET invites = invites + 1 WHERE id = ?"
             ).run(saved.ownerId);
 
-            console.log({
-    code: invite.code,
-    oldUses: saved.uses,
-    newUses: invite.uses,
-    ownerId: saved.ownerId
-});
+            console.log("Invite added to", saved.ownerId);
+
         }
-    }
+
+    };
+
 };
